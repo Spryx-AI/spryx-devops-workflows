@@ -52,13 +52,13 @@ jobs:
           twine check dist/*
 
       - name: Publish to PyPI via OIDC
-        uses: pypa/gh-action-pypi-publish@v1
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           package-dir: dist/
 
       - name: Publish to TestPyPI via OIDC
         if: ${{ inputs.publish-to-testpypi }}
-        uses: pypa/gh-action-pypi-publish@v1
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           package-dir: dist/
           repository-url: https://test.pypi.org/legacy/
