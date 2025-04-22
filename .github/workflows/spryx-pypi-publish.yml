@@ -8,11 +8,6 @@ on:
         required: false
         type: string
         default: "3.12"
-      test-matrix:
-        description: Run CI tests before publishing
-        required: false
-        type: boolean
-        default: true
       publish-to-testpypi:
         description: Also publish to TestPyPI
         required: false
@@ -25,14 +20,7 @@ on:
         default: true
 
 jobs:
-  call-ci:
-    if: inputs.test-matrix == true
-    uses: ./.github/workflows/ci.yml
-    secrets: inherit
-
   build-publish:
-    needs: call-ci
-    if: ${{ always() && (!inputs.test-matrix || success()) }}
     runs-on: ubuntu-latest
 
     permissions:

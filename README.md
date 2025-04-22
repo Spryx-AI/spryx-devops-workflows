@@ -38,55 +38,16 @@ jobs:
       use-poetry: false         # Optional, use Poetry for dependency management (default: false)
 ```
 
-### 2. Python Public Release Workflow
-
-The `python-public-release.yml` workflow builds and publishes Python packages to PyPI.
-
-**Features:**
-- Uses uv for faster package installation
-- Optionally runs the CI workflow first
-- Builds source distribution and wheel packages
-- Validates package description with twine
-- Option to publish to TestPyPI before PyPI
-- Supports skipping already published versions
-- Improved dependency caching for faster builds
-- Customizable build arguments
-
-**Usage Example:**
-
-```yaml
-name: Release
-
-on:
-  release:
-    types: [published]
-
-jobs:
-  publish:
-    uses: spryx-devops-workflows/.github/workflows/python-public-release.yml@main
-    with:
-      python-version: "3.12"         # Optional, Python version to use (default: "3.12")
-      test-matrix: true              # Optional, run CI tests before publishing (default: true)
-      build-args: "setuptools-scm"   # Optional, additional build dependencies (default: "")
-      publish-to-testpypi: true      # Optional, publish to TestPyPI first (default: false)
-      check-description: true        # Optional, validate package description (default: true)
-    secrets:
-      pypi-token: ${{ secrets.PYPI_API_TOKEN }}
-      testpypi-token: ${{ secrets.TEST_PYPI_API_TOKEN }}  # Required if publish-to-testpypi is true
-```
-
-### 3. Spryx PyPI Publish Workflow
+### 2. Spryx PyPI Publish Workflow
 
 The `spryx-pypi-publish.yml` workflow builds and publishes Python packages to PyPI using Poetry and OIDC authentication.
 
 **Features:**
 - Uses Poetry for dependency management and package building
-- Optionally runs the CI workflow first
-- Builds source distribution and wheel packages
 - Validates package description with twine
-- Option to publish to TestPyPI as well
-- Uses OIDC for secure authentication without tokens
-- Supports GitHub's id-token for PyPI publishing
+- Publishes to PyPI using OIDC authentication (no tokens needed)
+- Option to also publish to TestPyPI
+- Securely authenticates with PyPI using GitHub's OpenID Connect
 
 **Usage Example:**
 
@@ -99,10 +60,9 @@ on:
 
 jobs:
   publish:
-    uses: spryx-devops-workflows/.github/workflows/spryx-pypi-publish.yml@main
+    uses: ./.github/workflows/spryx-pypi-publish.yml
     with:
       python-version: "3.12"         # Optional, Python version to use (default: "3.12")
-      test-matrix: true              # Optional, run CI tests before publishing (default: true)
       publish-to-testpypi: false     # Optional, also publish to TestPyPI (default: false)
       check-description: true        # Optional, validate package description (default: true)
     secrets: inherit
@@ -120,26 +80,18 @@ jobs:
 | `upload-coverage` | No | `false` | Whether to upload coverage reports to Codecov |
 | `use-poetry` | No | `false` | Whether to use Poetry for dependency management |
 
-### Python Public Release Workflow
-
-| Parameter | Required | Default | Description |
-|-----------|----------|---------|-------------|
-| `python-version` | No | `"3.12"` | Python version to use for building and publishing |
-| `test-matrix` | No | `true` | Whether to run CI tests before publishing |
-| `build-args` | No | `""` | Additional build dependencies to install |
-| `publish-to-testpypi` | No | `false` | Whether to publish to TestPyPI first |
-| `check-description` | No | `true` | Validate package description with twine |
-| `pypi-token` (secret) | Yes | - | PyPI API token for publishing |
-| `testpypi-token` (secret) | No | - | TestPyPI API token (required if publishing to TestPyPI) |
-
 ### Spryx PyPI Publish Workflow
 
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
 | `python-version` | No | `"3.12"` | Python version to use for building and publishing |
-| `test-matrix` | No | `true` | Whether to run CI tests before publishing |
 | `publish-to-testpypi` | No | `false` | Whether to also publish to TestPyPI |
 | `check-description` | No | `true` | Validate package description with twine |
+
+**Notes:**
+- This workflow uses OpenID Connect (OIDC) for PyPI authentication, eliminating the need for PyPI API tokens
+- Poetry is used for dependency management and building the package
+- Make sure your repository has the appropriate OIDC trust configuration with PyPI
 
 ## Project Requirements
 
@@ -270,12 +222,3 @@ warn_unused_configs = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 ```
-
-## Implementation Notes
-
-- Supports both Poetry and direct pip workflows for flexibility
-- More efficient design with a single job for all quality checks
-- Requires tox-gh-actions plugin which maps GitHub's Python version to tox environments
-- Coverage reports are automatically uploaded to Codecov when enabled
-- The public release workflow will proceed even if tests fail, but only if `test-matrix` is false
-- Full git history is fetched for proper versioning with tools like setuptools-scm
