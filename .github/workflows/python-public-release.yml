@@ -11,9 +11,23 @@ on:
         required: false
         type: boolean
         default: true
+      build-args:
+        required: false
+        type: string
+        default: ""
+      publish-to-testpypi:
+        required: false
+        type: boolean
+        default: false
+      check-description:
+        required: false
+        type: boolean
+        default: true
     secrets:
       pypi-token:
         required: true
+      testpypi-token:
+        required: false
 
 jobs:
   call-ci:
@@ -22,17 +36,40 @@ jobs:
     secrets: inherit
 
   build-publish:
-    needs: [call-ci]
+    needs: call-ci
+    if: ${{ always() && (!inputs.test-matrix || success()) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ inputs.python-version }}
-      - name: Build sdist/wheel
+          cache: 'pip'
+      
+      - name: Install build dependencies
         run: |
-          pip install build
-          python -m build
+          python -m pip install --upgrade pip
+          pip install build twine ${{ inputs.build-args }}
+      
+      - name: Build sdist/wheel
+        run: python -m build
+      
+      - name: Check package description
+        if: ${{ inputs.check-description }}
+        run: twine check dist/*
+      
+      - name: Publish to TestPyPI
+        if: ${{ inputs.publish-to-testpypi }}
+        uses: pypa/gh-action-pypi-publish@v1.8.8
+        with:
+          user: __token__
+          password: ${{ secrets.testpypi-token }}
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
+      
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@v1.8.8
         with:
