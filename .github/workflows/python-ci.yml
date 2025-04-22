@@ -19,10 +19,14 @@ on:
         required: false
         type: string
         default: "lint"
-      tox-test-env:
+      skip-typecheck:
+        required: false
+        type: boolean
+        default: false
+      tox-typecheck-env:
         required: false
         type: string
-        default: "py"
+        default: "typecheck"
       upload-coverage:
         required: false
         type: boolean
@@ -54,6 +58,9 @@ jobs:
       - name: Run lint
         if: ${{ !inputs.skip-lint }}
         run: tox -e ${{ inputs.tox-lint-env }}
+      - name: Run typecheck
+        if: ${{ !inputs.skip-typecheck }}
+        run: tox -e ${{ inputs.tox-typecheck-env }}
       - name: Run tests
         run: tox
       - name: Upload coverage to Codecov
