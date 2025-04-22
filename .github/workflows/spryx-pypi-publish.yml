@@ -18,6 +18,13 @@ on:
         required: false
         type: boolean
         default: true
+    secrets:
+      pypi-token:
+        description: PyPI API token for publishing
+        required: true
+      testpypi-token:
+        description: TestPyPI API token
+        required: false
 
 jobs:
   build-publish:
@@ -51,14 +58,16 @@ jobs:
           pip install twine
           twine check dist/*
 
-      - name: Publish to PyPI via OIDC
+      - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          password: ${{ secrets.pypi-token }}
           package-dir: dist/
 
-      - name: Publish to TestPyPI via OIDC
+      - name: Publish to TestPyPI
         if: ${{ inputs.publish-to-testpypi }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          password: ${{ secrets.testpypi-token }}
           package-dir: dist/
           repository-url: https://test.pypi.org/legacy/

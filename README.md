@@ -40,14 +40,13 @@ jobs:
 
 ### 2. Spryx PyPI Publish Workflow
 
-The `spryx-pypi-publish.yml` workflow builds and publishes Python packages to PyPI using Poetry and OIDC authentication.
+The `spryx-pypi-publish.yml` workflow builds and publishes Python packages to PyPI using Poetry.
 
 **Features:**
 - Uses Poetry for dependency management and package building
 - Validates package description with twine
-- Publishes to PyPI using OIDC authentication (no tokens needed)
+- Publishes to PyPI using API tokens
 - Option to also publish to TestPyPI
-- Securely authenticates with PyPI using GitHub's OpenID Connect
 
 **Usage Example:**
 
@@ -61,15 +60,13 @@ on:
 jobs:
   publish:
     uses: ./.github/workflows/spryx-pypi-publish.yml
-    # Required permissions for PyPI OIDC authentication
-    permissions:
-      contents: read
-      id-token: write
     with:
       python-version: "3.12"         # Optional, Python version to use (default: "3.12")
       publish-to-testpypi: false     # Optional, also publish to TestPyPI (default: false)
       check-description: true        # Optional, validate package description (default: true)
-    secrets: inherit
+    secrets:
+      pypi-token: ${{ secrets.PYPI_API_TOKEN }}
+      testpypi-token: ${{ secrets.TEST_PYPI_API_TOKEN }}  # Required if publish-to-testpypi is true
 ```
 
 ## Configuration Options
@@ -92,16 +89,15 @@ jobs:
 | `publish-to-testpypi` | No | `false` | Whether to also publish to TestPyPI |
 | `check-description` | No | `true` | Validate package description with twine |
 
+| Secret | Required | Description |
+|--------|----------|-------------|
+| `pypi-token` | Yes | PyPI API token for publishing |
+| `testpypi-token` | No | TestPyPI API token (required if publish-to-testpypi is true) |
+
 **Notes:**
-- This workflow uses OpenID Connect (OIDC) for PyPI authentication, eliminating the need for PyPI API tokens
+- This workflow uses PyPI API tokens for authentication
 - Poetry is used for dependency management and building the package
-- Make sure your repository has the appropriate OIDC trust configuration with PyPI
-- **Important**: The calling workflow must set the following permissions for OIDC authentication:
-  ```yaml
-  permissions:
-    contents: read
-    id-token: write
-  ```
+- You need to create API tokens in your PyPI account settings
 
 ## Project Requirements
 
