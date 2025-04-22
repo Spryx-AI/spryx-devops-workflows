@@ -75,6 +75,39 @@ jobs:
       testpypi-token: ${{ secrets.TEST_PYPI_API_TOKEN }}  # Required if publish-to-testpypi is true
 ```
 
+### 3. Spryx PyPI Publish Workflow
+
+The `spryx-pypi-publish.yml` workflow builds and publishes Python packages to PyPI using Poetry and OIDC authentication.
+
+**Features:**
+- Uses Poetry for dependency management and package building
+- Optionally runs the CI workflow first
+- Builds source distribution and wheel packages
+- Validates package description with twine
+- Option to publish to TestPyPI as well
+- Uses OIDC for secure authentication without tokens
+- Supports GitHub's id-token for PyPI publishing
+
+**Usage Example:**
+
+```yaml
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    uses: spryx-devops-workflows/.github/workflows/spryx-pypi-publish.yml@main
+    with:
+      python-version: "3.12"         # Optional, Python version to use (default: "3.12")
+      test-matrix: true              # Optional, run CI tests before publishing (default: true)
+      publish-to-testpypi: false     # Optional, also publish to TestPyPI (default: false)
+      check-description: true        # Optional, validate package description (default: true)
+    secrets: inherit
+```
+
 ## Configuration Options
 
 ### Python CI Workflow
@@ -98,6 +131,15 @@ jobs:
 | `check-description` | No | `true` | Validate package description with twine |
 | `pypi-token` (secret) | Yes | - | PyPI API token for publishing |
 | `testpypi-token` (secret) | No | - | TestPyPI API token (required if publishing to TestPyPI) |
+
+### Spryx PyPI Publish Workflow
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `python-version` | No | `"3.12"` | Python version to use for building and publishing |
+| `test-matrix` | No | `true` | Whether to run CI tests before publishing |
+| `publish-to-testpypi` | No | `false` | Whether to also publish to TestPyPI |
+| `check-description` | No | `true` | Validate package description with twine |
 
 ## Project Requirements
 
