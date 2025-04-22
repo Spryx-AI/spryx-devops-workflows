@@ -13,6 +13,7 @@ The `python-ci.yml` workflow handles testing for Python projects using tox.
 - Uses project's tox configuration for all testing
 - Automatically detects and runs the right tox environments
 - Linting runs in dedicated tox environment
+- Type checking in dedicated tox environment
 - Single workflow for all quality checks
 - Improved caching for faster builds
 - Optional coverage reporting to Codecov
@@ -35,6 +36,8 @@ jobs:
       python-version: "3.12"                               # Optional, Python version for running tox
       skip-lint: false                                     # Optional, skip the linting step
       tox-lint-env: "lint"                                 # Optional, tox environment for linting
+      skip-typecheck: false                                # Optional, skip the type checking step
+      tox-typecheck-env: "typecheck"                       # Optional, tox environment for type checking
       upload-coverage: true                                # Optional, upload to Codecov
 ```
 
@@ -84,6 +87,8 @@ jobs:
 | `python-version` | No | `"3.12"` | Python version to use for running tox |
 | `skip-lint` | No | `false` | Skip linting step entirely |
 | `tox-lint-env` | No | `"lint"` | Tox environment name for linting |
+| `skip-typecheck` | No | `false` | Skip type checking step entirely |
+| `tox-typecheck-env` | No | `"typecheck"` | Tox environment name for type checking |
 | `upload-coverage` | No | `false` | Upload coverage reports to Codecov |
 
 ### Python Public Release Workflow
@@ -104,7 +109,8 @@ To use these workflows effectively, your Python project should have:
 
 1. A properly configured `pyproject.toml` or `setup.py` file
 2. A tox.ini file with appropriate environments:
-   - A lint environment (default: "lint") for code quality checks
+   - A lint environment (default: "lint") for code style checks with ruff/flake8
+   - A typecheck environment (default: "typecheck") for static type checking with mypy
    - Test environments configured for the Python versions you want to test
 3. For coverage reporting: Configure coverage in your tox.ini and pytest settings
 
