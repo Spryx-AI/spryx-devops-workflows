@@ -61,6 +61,10 @@ on:
 jobs:
   publish:
     uses: ./.github/workflows/spryx-pypi-publish.yml
+    # Required permissions for PyPI OIDC authentication
+    permissions:
+      contents: read
+      id-token: write
     with:
       python-version: "3.12"         # Optional, Python version to use (default: "3.12")
       publish-to-testpypi: false     # Optional, also publish to TestPyPI (default: false)
@@ -92,6 +96,12 @@ jobs:
 - This workflow uses OpenID Connect (OIDC) for PyPI authentication, eliminating the need for PyPI API tokens
 - Poetry is used for dependency management and building the package
 - Make sure your repository has the appropriate OIDC trust configuration with PyPI
+- **Important**: The calling workflow must set the following permissions for OIDC authentication:
+  ```yaml
+  permissions:
+    contents: read
+    id-token: write
+  ```
 
 ## Project Requirements
 
