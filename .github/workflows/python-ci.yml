@@ -1,0 +1,43 @@
+name: python-ci
+
+on:
+  workflow_call:
+    inputs:
+      python-versions:
+        required: false
+        type: string
+        default: '["3.9", "3.10", "3.11", "3.12"]'
+    secrets: {}
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with: {version: "0.6.2", enable-cache: true}
+      - name: Install lint deps
+        run: uv pip install ruff mypy
+      - name: Ruff check
+        run: ruff check .
+      - name: Ruff format check
+        run: ruff format --check .
+      - name: Type check
+        run: mypy .
+
+  test:
+    needs: lint
+    strategy:
+      matrix:
+        python-version: ${{ fromJson(inputs.python-versions) }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+      - name: Install tox
+        run: pip install tox
+      - name: Run tests (pytest inside tox)
+        run: tox -e py

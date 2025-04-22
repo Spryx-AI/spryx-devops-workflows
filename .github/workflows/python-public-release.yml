@@ -1,0 +1,41 @@
+name: python-public-release
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        required: false
+        type: string
+        default: "3.12"
+      test-matrix:
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      pypi-token:
+        required: true
+
+jobs:
+  call-ci:
+    if: inputs.test-matrix == true
+    uses: ./.github/workflows/python-ci.yml
+    secrets: inherit
+
+  build-publish:
+    needs: [call-ci]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+      - name: Build sdist/wheel
+        run: |
+          pip install build
+          python -m build
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@v1.8.8
+        with:
+          user: __token__
+          password: ${{ secrets.pypi-token }}
+          skip-existing: true
