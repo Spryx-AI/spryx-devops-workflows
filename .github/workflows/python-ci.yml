@@ -7,17 +7,36 @@ on:
         required: false
         type: string
         default: '["3.9", "3.10", "3.11", "3.12"]'
+      fail-fast:
+        required: false
+        type: boolean
+        default: false
+      skip-lint:
+        required: false
+        type: boolean
+        default: false
+      tox-env:
+        required: false
+        type: string
+        default: "py"
+      upload-coverage:
+        required: false
+        type: boolean
+        default: false
     secrets: {}
 
 jobs:
   lint:
+    if: ${{ !inputs.skip-lint }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
-        with: {version: "0.6.2", enable-cache: true}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: 'pip'
       - name: Install lint deps
-        run: uv pip install ruff mypy
+        run: pip install ruff mypy
       - name: Ruff check
         run: ruff check .
       - name: Ruff format check
@@ -27,7 +46,9 @@ jobs:
 
   test:
     needs: lint
+    if: ${{ always() && (inputs.skip-lint || success()) }}
     strategy:
+      fail-fast: ${{ inputs.fail-fast }}
       matrix:
         python-version: ${{ fromJson(inputs.python-versions) }}
     runs-on: ubuntu-latest
@@ -37,7 +58,19 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
-      - name: Install tox
-        run: pip install tox
-      - name: Run tests (pytest inside tox)
-        run: tox -e py
+      - name: Install tox and tox-gh-actions
+        run: pip install tox tox-gh-actions
+      - name: Setup tox cache
+        uses: actions/cache@v3
+        with:
+          path: .tox
+          key: ${{ runner.os }}-tox-${{ matrix.python-version }}-${{ hashFiles('**/pyproject.toml', '**/setup.py', '**/tox.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-tox-${{ matrix.python-version }}-
+      - name: Run tests
+        run: tox -e ${{ inputs.tox-env }}
+      - name: Upload coverage to Codecov
+        if: ${{ inputs.upload-coverage }}
+        uses: codecov/codecov-action@v3
+        with:
+          fail_ci_if_error: false 
