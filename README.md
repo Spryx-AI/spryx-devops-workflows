@@ -10,13 +10,11 @@ The `python-ci.yml` workflow handles testing for Python projects using tox.
 
 **Features:**
 - Uses Poetry for dependency management
-- Separate jobs for linting, type checking, and testing
-- Shared tox cache between jobs for efficiency
+- Single job with sequential quality checks
 - Uses project's tox configuration for all steps
-- Automatically detects and runs the right tox environments
-- Parallel execution of quality checks
-- Improved caching for faster builds
-- Optional coverage reporting to Codecov
+- Simplified configuration with sensible defaults
+- Unified caching for faster builds
+- Coverage reporting to Codecov
 
 **Usage Example:**
 
@@ -33,12 +31,9 @@ jobs:
   test:
     uses: spryx-devops-workflows/.github/workflows/python-ci.yml@main
     with:
-      python-version: "3.12"                               # Optional, Python version for running tox
-      skip-lint: false                                     # Optional, skip the linting step
-      tox-lint-env: "lint"                                 # Optional, tox environment for linting
-      skip-typecheck: false                                # Optional, skip the type checking step
-      tox-typecheck-env: "typecheck"                       # Optional, tox environment for type checking
-      upload-coverage: true                                # Optional, upload to Codecov
+      python-version: "3.12"    # Optional, Python version for running tox (default: "3.12")
+      run-lint: true            # Optional, run the linting step (default: true)
+      run-typecheck: true       # Optional, run the type checking step (default: true)
 ```
 
 ### 2. Python Public Release Workflow
@@ -85,11 +80,8 @@ jobs:
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
 | `python-version` | No | `"3.12"` | Python version to use for running tox |
-| `skip-lint` | No | `false` | Skip linting step entirely |
-| `tox-lint-env` | No | `"lint"` | Tox environment name for linting |
-| `skip-typecheck` | No | `false` | Skip type checking step entirely |
-| `tox-typecheck-env` | No | `"typecheck"` | Tox environment name for type checking |
-| `upload-coverage` | No | `false` | Upload coverage reports to Codecov |
+| `run-lint` | No | `true` | Whether to run the linting step |
+| `run-typecheck` | No | `true` | Whether to run the type checking step |
 
 ### Python Public Release Workflow
 
@@ -114,23 +106,123 @@ To use these workflows effectively, your Python project should have:
    - Test environments configured for the Python versions you want to test
 3. For coverage reporting: Configure coverage in your tox.ini and pytest settings
 
+## tox.ini Example Configuration
+
+Here's a sample `tox.ini` configuration that works well with the CI workflow:
+
+```ini
+[tox]
+envlist = py38, py39, py310, py311, py312, lint, typecheck
+isolated_build = True
+skip_missing_interpreters = True
+
+[gh-actions]
+python =
+    3.8: py38
+    3.9: py39
+    3.10: py310
+    3.11: py311
+    3.12: py312, lint, typecheck
+
+[testenv]
+deps =
+    pytest
+    pytest-cov
+commands =
+    pytest {posargs:tests} --cov=your_package_name --cov-report=xml
+
+[testenv:lint]
+deps =
+    ruff
+skip_install = True
+commands =
+    ruff check {posargs:.}
+    ruff format --check {posargs:.}
+
+[testenv:typecheck]
+deps =
+    mypy
+    types-requests
+    # Add other type stubs as needed
+commands =
+    mypy {posargs:your_package_name}
+
+[pytest]
+testpaths = tests
+python_files = test_*.py
+python_functions = test_*
+```
+
+### Explanation
+
+1. **Basic tox configuration**:
+   - `envlist`: Defines all environments to run, including Python versions and quality checks
+   - `isolated_build`: Creates an isolated build environment
+   - `skip_missing_interpreters`: Skips Python versions not available on the system
+
+2. **GitHub Actions integration**:
+   - `[gh-actions]` section maps GitHub's Python versions to tox environments
+   - When running Python 3.12 in GitHub Actions, it will also run lint and typecheck
+
+3. **Test environments**:
+   - `[testenv]` defines settings for all test environments
+   - Uses pytest and pytest-cov for running tests and collecting coverage
+   - Generates an XML coverage report that Codecov can read
+
+4. **Lint environment**:
+   - Uses ruff for both linting and formatting checks
+   - `skip_install = True` means it doesn't need to install the package
+
+5. **Type check environment**:
+   - Uses mypy for static type checking
+   - Includes common type stubs like `types-requests`
+
+### Usage with Poetry
+
+If your project uses Poetry, you should have a `pyproject.toml` file. Here's a basic example that works with the tox configuration above:
+
+```toml
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "your-package-name"
+version = "0.1.0"
+description = "Your package description"
+authors = ["Your Name <your.email@example.com>"]
+readme = "README.md"
+packages = [{include = "your_package_name"}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+# Add your dependencies here
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.3.1"
+pytest-cov = "^4.1.0"
+ruff = "^0.1.3"
+mypy = "^1.5.1"
+tox = "^4.11.3"
+
+[tool.ruff]
+line-length = 88
+target-version = "py38"
+select = ["E", "F", "I", "UP"]
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+```
+
 ## Implementation Notes
 
 - Uses Poetry for dependency management and virtual environments
-- CI workflow splits tasks into parallel jobs for faster execution
+- More efficient design with a single job for all quality checks
 - Requires tox-gh-actions plugin which maps GitHub's Python version to tox environments
-- Shares tox cache between jobs to avoid rebuilding environments
-- Tests run only if linting and type checking pass (unless skipped)
-- Recommend adding this configuration to your tox.ini:
-  ```ini
-  [gh-actions]
-  python =
-      3.8: py38
-      3.9: py39
-      3.10: py310
-      3.11: py311
-      3.12: py312
-  ```
-- When using codecov integration, make sure your project generates coverage reports
+- Coverage reports are automatically uploaded to Codecov
 - The public release workflow will proceed even if tests fail, but only if `test-matrix` is false
 - Full git history is fetched for proper versioning with tools like setuptools-scm
