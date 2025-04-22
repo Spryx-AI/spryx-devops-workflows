@@ -14,7 +14,7 @@ The `python-ci.yml` workflow handles testing for Python projects using tox.
 - Uses project's tox configuration for all steps
 - Simplified configuration with sensible defaults
 - Unified caching for faster builds
-- Coverage reporting to Codecov
+- Optional coverage reporting to Codecov
 
 **Usage Example:**
 
@@ -34,6 +34,7 @@ jobs:
       python-version: "3.12"    # Optional, Python version for running tox (default: "3.12")
       run-lint: true            # Optional, run the linting step (default: true)
       run-typecheck: true       # Optional, run the type checking step (default: true)
+      upload-coverage: false    # Optional, upload coverage reports to Codecov (default: false)
 ```
 
 ### 2. Python Public Release Workflow
@@ -82,6 +83,7 @@ jobs:
 | `python-version` | No | `"3.12"` | Python version to use for running tox |
 | `run-lint` | No | `true` | Whether to run the linting step |
 | `run-typecheck` | No | `true` | Whether to run the type checking step |
+| `upload-coverage` | No | `false` | Whether to upload coverage reports to Codecov |
 
 ### Python Public Release Workflow
 
@@ -223,6 +225,6 @@ disallow_incomplete_defs = true
 - Uses Poetry for dependency management and virtual environments
 - More efficient design with a single job for all quality checks
 - Requires tox-gh-actions plugin which maps GitHub's Python version to tox environments
-- Coverage reports are automatically uploaded to Codecov
+- Coverage reports are automatically uploaded to Codecov when enabled
 - The public release workflow will proceed even if tests fail, but only if `test-matrix` is false
 - Full git history is fetched for proper versioning with tools like setuptools-scm

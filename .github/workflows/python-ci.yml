@@ -15,6 +15,10 @@ on:
         required: false
         type: boolean
         default: true
+      upload-coverage:
+        required: false
+        type: boolean
+        default: false
     secrets: {}
 
 jobs:
@@ -58,6 +62,7 @@ jobs:
         run: poetry run tox
       
       - name: Upload coverage
+        if: ${{ inputs.upload-coverage }}
         uses: codecov/codecov-action@v3
         with:
           fail_ci_if_error: false 
