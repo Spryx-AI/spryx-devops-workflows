@@ -27,7 +27,7 @@ on:
 jobs:
   call-ci:
     if: inputs.test-matrix == true
-    uses: ./.github/workflows/python-ci.yml
+    uses: ./.github/workflows/ci.yml
     secrets: inherit
 
   build-publish:
