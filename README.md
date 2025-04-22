@@ -6,14 +6,14 @@ This repository contains reusable GitHub workflows for Python projects. These wo
 
 ### 1. Python CI Workflow
 
-The `python-ci.yml` workflow handles linting and testing for Python projects.
+The `python-ci.yml` workflow handles testing for Python projects using tox.
 
 **Features:**
-- Code linting with Ruff (checking and formatting)
-- Type checking with MyPy
-- Testing with pytest through tox
-- Matrix testing with multiple Python versions
-- Conditional linting with skip option
+- Uses uv for faster package installation
+- Uses project's tox configuration for all testing
+- Automatically detects and runs the right tox environments
+- Linting runs in dedicated tox environment
+- Single workflow for all quality checks
 - Improved caching for faster builds
 - Optional coverage reporting to Codecov
 
@@ -32,10 +32,9 @@ jobs:
   test:
     uses: spryx-devops-workflows/.github/workflows/python-ci.yml@main
     with:
-      python-versions: '["3.9", "3.10", "3.11", "3.12"]'  # Optional, test matrix
-      fail-fast: false                                     # Optional, continue tests if one fails
+      python-version: "3.12"                               # Optional, Python version for running tox
       skip-lint: false                                     # Optional, skip the linting step
-      tox-env: "py"                                        # Optional, tox environment to run
+      tox-lint-env: "lint"                                 # Optional, tox environment for linting
       upload-coverage: true                                # Optional, upload to Codecov
 ```
 
@@ -44,6 +43,7 @@ jobs:
 The `python-public-release.yml` workflow builds and publishes Python packages to PyPI.
 
 **Features:**
+- Uses uv for faster package installation
 - Optionally runs the CI workflow first
 - Builds source distribution and wheel packages
 - Validates package description with twine
@@ -81,10 +81,9 @@ jobs:
 
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
-| `python-versions` | No | `["3.9", "3.10", "3.11", "3.12"]` | JSON array of Python versions to test against |
-| `fail-fast` | No | `false` | Whether to stop all matrix tests if one fails |
+| `python-version` | No | `"3.12"` | Python version to use for running tox |
 | `skip-lint` | No | `false` | Skip linting step entirely |
-| `tox-env` | No | `"py"` | Tox environment name to run |
+| `tox-lint-env` | No | `"lint"` | Tox environment name for linting |
 | `upload-coverage` | No | `false` | Upload coverage reports to Codecov |
 
 ### Python Public Release Workflow
@@ -104,15 +103,25 @@ jobs:
 To use these workflows effectively, your Python project should have:
 
 1. A properly configured `pyproject.toml` or `setup.py` file
-2. For linting: Ruff and mypy configurations
-3. For testing: Tox configuration with appropriate environments  
-4. For coverage reporting: Configure coverage in your tox.ini and pytest settings
+2. A tox.ini file with appropriate environments:
+   - A lint environment (default: "lint") for code quality checks
+   - Test environments configured for the Python versions you want to test
+3. For coverage reporting: Configure coverage in your tox.ini and pytest settings
 
 ## Implementation Notes
 
-- The linting job uses Python 3.12 regardless of the test matrix
-- Tests will run even if linting is skipped or fails (`always()` condition)
-- Caching is applied to both pip and tox environments for faster builds
+- Uses uv (astral-sh/uv) instead of pip for significantly faster dependency installation
+- Requires tox-gh-actions plugin which maps GitHub's Python version to tox environments
+- Recommend adding this configuration to your tox.ini:
+  ```ini
+  [gh-actions]
+  python =
+      3.8: py38
+      3.9: py39
+      3.10: py310
+      3.11: py311
+      3.12: py312
+  ```
 - When using codecov integration, make sure your project generates coverage reports
 - The public release workflow will proceed even if tests fail, but only if `test-matrix` is false
 - Full git history is fetched for proper versioning with tools like setuptools-scm
