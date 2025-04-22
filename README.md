@@ -9,12 +9,12 @@ This repository contains reusable GitHub workflows for Python projects. These wo
 The `python-ci.yml` workflow handles testing for Python projects using tox.
 
 **Features:**
-- Uses uv for faster package installation
-- Uses project's tox configuration for all testing
+- Uses Poetry for dependency management
+- Separate jobs for linting, type checking, and testing
+- Shared tox cache between jobs for efficiency
+- Uses project's tox configuration for all steps
 - Automatically detects and runs the right tox environments
-- Linting runs in dedicated tox environment
-- Type checking in dedicated tox environment
-- Single workflow for all quality checks
+- Parallel execution of quality checks
 - Improved caching for faster builds
 - Optional coverage reporting to Codecov
 
@@ -116,8 +116,11 @@ To use these workflows effectively, your Python project should have:
 
 ## Implementation Notes
 
-- Uses uv (astral-sh/uv) instead of pip for significantly faster dependency installation
+- Uses Poetry for dependency management and virtual environments
+- CI workflow splits tasks into parallel jobs for faster execution
 - Requires tox-gh-actions plugin which maps GitHub's Python version to tox environments
+- Shares tox cache between jobs to avoid rebuilding environments
+- Tests run only if linting and type checking pass (unless skipped)
 - Recommend adding this configuration to your tox.ini:
   ```ini
   [gh-actions]

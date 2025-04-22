@@ -7,64 +7,57 @@ on:
         required: false
         type: string
         default: "3.12"
-      fail-fast:
+      run-lint:
         required: false
         type: boolean
-        default: false
-      skip-lint:
+        default: true
+      run-typecheck:
         required: false
         type: boolean
-        default: false
-      tox-lint-env:
-        required: false
-        type: string
-        default: "lint"
-      skip-typecheck:
-        required: false
-        type: boolean
-        default: false
-      tox-typecheck-env:
-        required: false
-        type: string
-        default: "typecheck"
-      upload-coverage:
-        required: false
-        type: boolean
-        default: false
+        default: true
     secrets: {}
 
 jobs:
-  test:
+  quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ inputs.python-version }}
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v3
+      
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
         with:
-          version: "0.6.2"
-          enable-cache: true
-      - name: Install tox and tox-gh-actions
-        run: uv pip install tox tox-gh-actions
-      - name: Setup tox cache
+          version: 1.8.2
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      
+      - name: Cache dependencies
         uses: actions/cache@v3
         with:
-          path: .tox
-          key: ${{ runner.os }}-tox-${{ inputs.python-version }}-${{ hashFiles('**/pyproject.toml', '**/setup.py', '**/tox.ini') }}
-          restore-keys: |
-            ${{ runner.os }}-tox-${{ inputs.python-version }}-
+          path: |
+            .venv
+            .tox
+          key: ${{ runner.os }}-deps-${{ inputs.python-version }}-${{ hashFiles('**/poetry.lock', '**/pyproject.toml', '**/tox.ini') }}
+      
+      - name: Install dependencies
+        run: poetry install
+      
       - name: Run lint
-        if: ${{ !inputs.skip-lint }}
-        run: tox -e ${{ inputs.tox-lint-env }}
+        if: ${{ inputs.run-lint }}
+        run: poetry run tox -e lint
+        
       - name: Run typecheck
-        if: ${{ !inputs.skip-typecheck }}
-        run: tox -e ${{ inputs.tox-typecheck-env }}
+        if: ${{ inputs.run-typecheck }}
+        run: poetry run tox -e typecheck
+        
       - name: Run tests
-        run: tox
-      - name: Upload coverage to Codecov
-        if: ${{ inputs.upload-coverage }}
+        run: poetry run tox
+      
+      - name: Upload coverage
         uses: codecov/codecov-action@v3
         with:
           fail_ci_if_error: false 
