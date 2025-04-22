@@ -9,7 +9,7 @@ This repository contains reusable GitHub workflows for Python projects. These wo
 The `python-ci.yml` workflow handles testing for Python projects using tox.
 
 **Features:**
-- Uses Poetry for dependency management
+- Flexible dependency management (with or without Poetry)
 - Single job with sequential quality checks
 - Uses project's tox configuration for all steps
 - Simplified configuration with sensible defaults
@@ -35,6 +35,7 @@ jobs:
       run-lint: true            # Optional, run the linting step (default: true)
       run-typecheck: true       # Optional, run the type checking step (default: true)
       upload-coverage: false    # Optional, upload coverage reports to Codecov (default: false)
+      use-poetry: false         # Optional, use Poetry for dependency management (default: false)
 ```
 
 ### 2. Python Public Release Workflow
@@ -84,6 +85,7 @@ jobs:
 | `run-lint` | No | `true` | Whether to run the linting step |
 | `run-typecheck` | No | `true` | Whether to run the type checking step |
 | `upload-coverage` | No | `false` | Whether to upload coverage reports to Codecov |
+| `use-poetry` | No | `false` | Whether to use Poetry for dependency management |
 
 ### Python Public Release Workflow
 
@@ -107,6 +109,13 @@ To use these workflows effectively, your Python project should have:
    - A typecheck environment (default: "typecheck") for static type checking with mypy
    - Test environments configured for the Python versions you want to test
 3. For coverage reporting: Configure coverage in your tox.ini and pytest settings
+
+## Notes for Poetry Users
+
+If you're using Poetry, ensure your `pyproject.toml` has a valid `[tool.poetry]` section. Set `use-poetry: true` in the workflow inputs. If your project doesn't have this section but does have a `poetry.lock` file, you might encounter errors. In this case, either:
+
+1. Add a proper `[tool.poetry]` section to your `pyproject.toml`, or
+2. Set `use-poetry: false` to use pip for installing tox directly
 
 ## tox.ini Example Configuration
 
@@ -222,7 +231,7 @@ disallow_incomplete_defs = true
 
 ## Implementation Notes
 
-- Uses Poetry for dependency management and virtual environments
+- Supports both Poetry and direct pip workflows for flexibility
 - More efficient design with a single job for all quality checks
 - Requires tox-gh-actions plugin which maps GitHub's Python version to tox environments
 - Coverage reports are automatically uploaded to Codecov when enabled
