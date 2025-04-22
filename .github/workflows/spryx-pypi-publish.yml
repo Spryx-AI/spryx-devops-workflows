@@ -1,0 +1,87 @@
+name: spryx-pypi-publish
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: Qual versão do Python usar para build
+        required: false
+        type: string
+        default: "3.12"
+      test-matrix:
+        description: Se deve rodar o CI antes do publish
+        required: false
+        type: boolean
+        default: true
+      publish-to-testpypi:
+        description: Se deve publicar também no TestPyPI
+        required: false
+        type: boolean
+        default: false
+      check-description:
+        description: Se deve rodar `twine check dist/*`
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      pypi-token:
+        description: Token de publicação no PyPI
+        required: true
+      testpypi-token:
+        description: Token de publicação no TestPyPI (se for usar)
+        required: false
+
+jobs:
+  call-ci:
+    if: inputs.test-matrix == true
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  build-publish:
+    needs: call-ci
+    if: ${{ always() && (!inputs.test-matrix || success()) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: 'poetry'
+
+      - name: Install Poetry CLI
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+
+      - name: Install dependencies
+        run: poetry install --no-interaction --no-ansi --no-root
+
+      - name: Build package
+        run: poetry build
+
+      - name: Check package metadata & description
+        if: ${{ inputs.check-description }}
+        run: |
+          pip install twine
+          twine check dist/*
+
+      - name: Configure Poetry credentials
+        run: |
+          poetry config pypi-token.pypi ${{ secrets.pypi-token }}
+          if [ "${{ inputs.publish-to-testpypi }}" = "true" ]; then
+            poetry config pypi-token.testpypi ${{ secrets.testpypi-token }}
+          fi
+
+      - name: Publish to TestPyPI
+        if: ${{ inputs.publish-to-testpypi }}
+        run: |
+          poetry publish --repository testpypi --no-interaction
+
+      - name: Publish to PyPI
+        run: |
+          poetry publish --no-interaction
